@@ -1,0 +1,18 @@
+<ActionBar title="{N} Couchbase Photos">
+  <ActionItem text="Capture" ios.position="right" (tap)="takePicture()"></ActionItem>
+  <ActionItem text="multiple capture" ios.position="right" (tap)="onSelectMultipleTap()"></ActionItem>
+</ActionBar>
+<!-- 
+<StackLayout>
+  <Image *ngFor="let image of images" [src]="image"></Image>
+</StackLayout> -->
+<GridLayout rows="*">
+  <ListView [items]="images">
+    <ng-template let-image="item" let-i="index">
+      <GridLayout columns="*">
+        <Image [width]="previewSize" [height]="previewSize" [src]="image" stretch="fill"></Image>
+      </GridLayout>
+    </ng-template>
+  </ListView>
+</GridLayout>
+
