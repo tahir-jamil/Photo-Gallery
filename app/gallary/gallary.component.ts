@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Couchbase } from "nativescript-couchbase";
 import * as camera from "nativescript-camera";
 import * as ImageSource from "image-source";
@@ -14,7 +14,7 @@ import * as imagepicker from "nativescript-imagepicker";
 })
 
 export class GallaryComponent implements OnInit {
-  
+
     public database: any;
     public images: Array<any>;
 
@@ -23,8 +23,8 @@ export class GallaryComponent implements OnInit {
     thumbSize: number = 80;
     previewSize: number = 200;
 
-    public constructor() {
-        this.database = new Couchbase("image-database");
+    public constructor(private ref: ChangeDetectorRef) {
+        this.database = new Couchbase("testing-two-couchbase");
         this.database.createView("images", "1", function (document, emitter) {
             if (document.type && document.type == "image") {
                 emitter.emit(document._id, document);
@@ -34,6 +34,11 @@ export class GallaryComponent implements OnInit {
     }
 
     public ngOnInit() {
+        this.getImages();
+    }
+
+    getImages() {
+
         let rows = this.database.executeQuery("images");
         for (let i = 0; i < rows.length; i++) {
             this.images.push(ImageSource.fromBase64(rows[i].image));
@@ -50,13 +55,13 @@ export class GallaryComponent implements OnInit {
     }
 
     public capture() {
-        camera.takePicture({ width: 300, height: 300, keepAspectRatio: true, saveToGallery: true }).then((base64image) => {
-            this.addImages(base64image);
+        camera.takePicture({ width: 300, height: 300, keepAspectRatio: true, saveToGallery: true }).then((img) => {
+            this.addImages(img);
+            this.images.push((<any>img)._android);
         }, (err) => {
             console.log("Error -> " + err.message);
         });
     }
-
 
     addImages(image) {
         ImageSource.fromAsset(image).then((source) => {
@@ -66,15 +71,18 @@ export class GallaryComponent implements OnInit {
                 "image": base64image,
                 "timestamp": (new Date()).getTime()
             });
-            this.images.push(base64image);
+            // this.images.push(base64image);
+            // this.ref.detectChanges();
+
         });
+
+        // this.getImages();
     }
 
 
     //select image from device
 
     public onSelectMultipleTap() {
-
         let context = imagepicker.create({
             mode: "multiple"
         });
@@ -83,7 +91,6 @@ export class GallaryComponent implements OnInit {
 
     private startSelection(context) {
         let that = this;
-
         context
             .authorize()
             .then(() => {
@@ -104,6 +111,7 @@ export class GallaryComponent implements OnInit {
                 that.imageAssets = selection;
                 this.imageAssets.forEach(element => {
                     this.addImages(element);
+                    this.images.push(element._android);
                 });
             }).catch(function (e) {
                 console.log(e);
