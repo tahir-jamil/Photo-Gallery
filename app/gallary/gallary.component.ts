@@ -17,14 +17,11 @@ export class GallaryComponent implements OnInit {
 
     public database: any;
     public images: Array<any>;
-
     imageAssets = [];
-    imageSrc: any;
-    thumbSize: number = 80;
     previewSize: number = 200;
 
     public constructor(private ref: ChangeDetectorRef) {
-        this.database = new Couchbase("testing-two-couchbase");
+        this.database = new Couchbase("testing");
         this.database.createView("images", "1", function (document, emitter) {
             if (document.type && document.type == "image") {
                 emitter.emit(document._id, document);
@@ -37,14 +34,16 @@ export class GallaryComponent implements OnInit {
         this.getImages();
     }
 
+    // getting images from database
     getImages() {
-
+        this.images = [];
         let rows = this.database.executeQuery("images");
         for (let i = 0; i < rows.length; i++) {
             this.images.push(ImageSource.fromBase64(rows[i].image));
         }
     }
 
+    // accept for requestPermission to use Camera
     public takePicture() {
         Permissions.requestPermission(android.Manifest.permission.CAMERA, "Needed for connectivity status").then(() => {
             console.log("Permission granted!");
@@ -54,6 +53,7 @@ export class GallaryComponent implements OnInit {
         });
     }
 
+    // calling capture image from devcie camera
     public capture() {
         camera.takePicture({ width: 300, height: 300, keepAspectRatio: true, saveToGallery: true }).then((img) => {
             this.addImages(img);
@@ -63,6 +63,7 @@ export class GallaryComponent implements OnInit {
         });
     }
 
+    // add images to database
     addImages(image) {
         ImageSource.fromAsset(image).then((source) => {
             let base64image = source.toBase64String("jpg", 60);
@@ -71,17 +72,14 @@ export class GallaryComponent implements OnInit {
                 "image": base64image,
                 "timestamp": (new Date()).getTime()
             });
-            // this.images.push(base64image);
-            // this.ref.detectChanges();
-
+            this.getImages();
         });
-
-        // this.getImages();
+    }
+    addmreo() {
+        this.getImages();
     }
 
-
     //select image from device
-
     public onSelectMultipleTap() {
         let context = imagepicker.create({
             mode: "multiple"
@@ -95,12 +93,10 @@ export class GallaryComponent implements OnInit {
             .authorize()
             .then(() => {
                 that.imageAssets = [];
-                that.imageSrc = null;
                 return context.present();
             })
             .then((selection) => {
                 console.log("Selection done: " + JSON.stringify(selection));
-                that.imageSrc = null;
 
                 // set the images to be loaded from the assets with optimal sizes (optimize memory usage)
                 selection.forEach(function (element) {
@@ -111,7 +107,6 @@ export class GallaryComponent implements OnInit {
                 that.imageAssets = selection;
                 this.imageAssets.forEach(element => {
                     this.addImages(element);
-                    this.images.push(element._android);
                 });
             }).catch(function (e) {
                 console.log(e);

@@ -6,7 +6,9 @@
 <StackLayout>
   <Image *ngFor="let image of images" [src]="image"></Image>
 </StackLayout> -->
-<GridLayout rows="*">  
+<GridLayout rows="auto,*">
+  <Button text="dsf" (tap)="addmreo()"></Button>
+    
   <ListView row="1" [items]="images">
     <ng-template let-image="item" let-i="index">
       <GridLayout columns="*">
