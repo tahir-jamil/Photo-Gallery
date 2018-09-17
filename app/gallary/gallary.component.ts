@@ -19,6 +19,7 @@ export class GallaryComponent implements OnInit {
     public images: Array<any>;
     imageAssets = [];
     previewSize: number = 200;
+    watch: number;
 
     public constructor(private ref: ChangeDetectorRef) {
         this.database = new Couchbase("testing");
@@ -28,6 +29,7 @@ export class GallaryComponent implements OnInit {
             }
         });
         this.images = [];
+        this.startWatch();
     }
 
     public ngOnInit() {
@@ -37,9 +39,13 @@ export class GallaryComponent implements OnInit {
     // getting images from database
     getImages() {
         this.images = [];
+        this.startWatch();
         let rows = this.database.executeQuery("images");
+        this.logWatch("database queried:");
+        console.log("Images found:" + (rows.length-1));
         for (let i = 0; i < rows.length; i++) {
             this.images.push(ImageSource.fromBase64(rows[i].image));
+            this.logWatch("image retrieved:")
         }
     }
 
@@ -57,7 +63,8 @@ export class GallaryComponent implements OnInit {
     public capture() {
         camera.takePicture({ width: 300, height: 300, keepAspectRatio: true, saveToGallery: true }).then((img) => {
             this.addImages(img);
-            this.images.push((<any>img)._android);
+            //this.images.push((<any>img)._android);
+            this.getImages();
         }, (err) => {
             console.log("Error -> " + err.message);
         });
@@ -66,17 +73,34 @@ export class GallaryComponent implements OnInit {
     // add images to database
     addImages(image) {
         ImageSource.fromAsset(image).then((source) => {
-            let base64image = source.toBase64String("jpg", 60);
+            let base64image = source.toBase64String("jpg", 80);
             this.database.createDocument({
                 "type": "image",
                 "image": base64image,
                 "timestamp": (new Date()).getTime()
             });
-            this.getImages();
+            //this.getImages();
         });
     }
+
     addmreo() {
         this.getImages();
+    }
+
+    startWatch() {
+        this.watch = Date.now();
+    }
+
+    stopWatch(reset: boolean = true): Number {
+        const diff = Date.now()-this.watch;
+        if (reset) {
+            this.startWatch();
+        }
+        return (diff);
+    }
+
+    logWatch(text: string) {
+        console.log(text + this.stopWatch(true));
     }
 
     //select image from device
@@ -105,9 +129,12 @@ export class GallaryComponent implements OnInit {
                 });
 
                 that.imageAssets = selection;
+                this.startWatch();
                 this.imageAssets.forEach(element => {
                     this.addImages(element);
+                    this.logWatch("image added to database:");
                 });
+                this.getImages();
             }).catch(function (e) {
                 console.log(e);
             });
